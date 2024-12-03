@@ -1,0 +1,18 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  # This name uniquely identifies the PVC. Will be used in deployment below.
+  name: sif-edge-pv-claim
+  namespace: sif
+  labels:
+    app: sif-edge
+spec:
+  # Read more about access modes here:https://kubernetes.io/docs/concepts/storage/persistent-volumes/#access-modes 
+  accessModes:
+    - ReadWriteMany         # Similar to the pv, this means this pvc can be used
+                            # by many pods.
+  storageClassName: manual
+  resources:
+    # This is the request for storage. Should be available in the cluster.
+    requests:
+      storage: 30Gi

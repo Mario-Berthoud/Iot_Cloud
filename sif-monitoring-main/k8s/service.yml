@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: monitoring
+spec:
+  type: ClusterIP
+  ports:
+    - name: monitoring
+      port: 8000          # Port k8s svc will listen for incoming traffic within the k8s cluster
+      targetPort: 8000    # Port of pod to route incoming traffic
+      protocol: TCP
+  selector:
+    app: monitoring

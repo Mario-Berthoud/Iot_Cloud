@@ -1,0 +1,23 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: monitoring
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: monitoring
+  template:
+    metadata:
+      labels:
+        app: monitoring
+    spec:
+      containers:
+        - name: monitoring
+          image: marioberthoud/sif-monitoring:latest   # If you do not provide a <tag>, k8s will use `latest`
+          imagePullPolicy: "Always"   # This means the container runtime will pull the image every time the pod is (re-)created. Another possible value is 'IfNotPresent'
+          ports:
+            - containerPort: 8000     # Exposes a port in a given container to receive traffic
+          envFrom:
+            - configMapRef:
+                name: monitoring-configmap

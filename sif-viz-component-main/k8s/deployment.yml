@@ -1,0 +1,25 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: <component-name>
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: <component-name>
+  template:
+    metadata:
+      labels:
+        app: <component-name>
+    spec:
+      imagePullSecrets:
+        - name: <secret>
+      containers:
+        - name: <component-name>
+          image: <image-name>:<tag>
+          imagePullPolicy: "Always"
+          ports:
+            - containerPort: 9000
+          envFrom:
+            - configMapRef:
+                name: <component-name>-configmap

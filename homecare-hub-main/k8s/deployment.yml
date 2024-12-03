@@ -1,0 +1,25 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: <website-component-name>
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: <website-component-name>
+  template:
+    metadata:
+      labels:
+        app: <website-component-name>
+    spec:
+      imagePullSecrets:
+        - name: <secret>
+      containers:
+        - name: <website-component-name>
+          image: <image-name>:<tag>
+          imagePullPolicy: "Always"
+          ports:
+            - containerPort: 3000
+          envFrom:
+            - configMapRef:
+                name: <website-component-name>-configmap

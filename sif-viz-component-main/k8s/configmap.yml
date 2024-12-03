@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: <component-name>-configmap
+  labels:
+    app: <component-name>
+data:
+  INFLUXDB_HOST: http://influx.iot.svc.cluster.local:8086
+  INFLUXDB_USER: admin
+  INFLUXDB_PASS: secure_influx_iot_user

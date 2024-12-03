@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: <website-component-name>
+spec:
+  type: NodePort
+  ports:
+    - name: <website-component-name>
+      port: 3000
+      targetPort: 3000
+      nodePort: 30031
+      protocol: TCP
+  selector:
+    app: <website-component-name>

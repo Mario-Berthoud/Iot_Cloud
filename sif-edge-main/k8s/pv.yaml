@@ -1,0 +1,20 @@
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: sif-edge-pv-volume
+  namespace: sif
+  labels:
+    type: local
+    app: sif-edge
+spec:
+  storageClassName: manual
+  capacity:
+    storage: 30Gi
+  accessModes:
+    - ReadWriteMany                   # It tells k8s that many clients can R/W.
+                                      # To ensure **only** one container gets access to it,
+                                      # you can use `ReadWriteOnce`. 
+  hostPath:
+    path: "/data/wise2024/sif-edge"   # The path in the local host to store data.
+                                      # You can also use other types of volumes.
+                                      # For more, please read the documentation

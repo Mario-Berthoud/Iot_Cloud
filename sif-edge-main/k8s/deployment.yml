@@ -1,0 +1,33 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: sif-edge
+  namespace: sif
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: sif-edge
+  template:
+    metadata:
+      labels:
+        app: sif-edge
+    spec:
+      containers:
+        - name: sif-edge
+          image: marioberthoud/sif-edge:latest
+          imagePullPolicy: "Always"
+          ports:
+            - containerPort: 9000
+          volumeMounts:
+            - mountPath: /data
+              name: sif-edge
+      volumes:                                # The SIF scheduler persists its state under /data/,
+        - name: sif-edge                      # which is only available inside the container. Thus, we mount
+          persistentVolumeClaim:              # an external (host) volumen to store the data locally. Since
+            claimName: sif-edge-pv-claim      # the volumes can be shared across containers, k8s uses a combination
+                                              # of Persistent Volumes (pv) and Persistent Volume Claims (pvc). The
+                                              # pv create the host volume, while the pvc grants a container access to
+                                              # an associated pv. It is important to denote: pv names are **global**, i.e.,
+                                              # they are unique, while pvc are namespaced, i.e., pvc can share the same name
+                                              # as long as they exist in different k8s' namespaces.
