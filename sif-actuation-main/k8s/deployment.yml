@@ -1,25 +1,23 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: <component-name>
+  name: actuation
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: <component-name>
+      app: actuation
   template:
     metadata:
       labels:
-        app: <component-name>
+        app: actuation
     spec:
-      imagePullSecrets:         # This field is useful in case your image resides in a private registry
-        - name: <secret-name>   # you can remove this block if you are user Docker Hub
       containers:
-        - name: <component-name>
-          image: <image-name>:<tag>   # If you do not provide a <tag>, k8s will use `latest`
+        - name: actuation
+          image: marioberthoud/sif-actuation:latest   # If you do not provide a <tag>, k8s will use `latest`
           imagePullPolicy: "Always"   # This means the container runtime will pull the image every time the pod is (re-)created. Another possible value is 'IfNotPresent'
           ports:
             - containerPort: 8000     # Exposes a port in a given container to receive traffic
           envFrom:
             - configMapRef:
-                name: <component-name>-configmap
+                name: actuation-configmap

@@ -5,4 +5,4 @@ metadata:
   labels:
     app: monitoring
 data:
-  SCH_SERVICE_NAME: http://sif-edge.default:9000
+  SCH_SERVICE_NAME: http://sif-edge.digitaltwin:9000
