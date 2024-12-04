@@ -27,13 +27,13 @@ class EmergencyEvent(BaseEventFabric):
    
 app = LocalGateway()
 
-async def EmergencyDetectionFunction():
+async def emergency_detection_function():
     base_logger.info("EMERGENCY")
     # function
     return
 
 # app.deploy(base_fn, "fn-fabric", "CreateFn")
-app.deploy(EmergencyDetectionFunction,
+app.deploy(emergency_detection_function,
     name="str",
     evts="List[str]",
     method="str",

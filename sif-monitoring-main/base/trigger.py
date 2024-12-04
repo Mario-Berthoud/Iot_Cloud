@@ -9,7 +9,7 @@ from threading import Thread
 from base import BaseEventFabric
 
 
-def one_shot(cb):
+def one_shot_cb(cb):
     def handler():
         cb()
         return schedule.CancelJob
@@ -44,7 +44,7 @@ class Trigger(ABC):
         self.scheduler = schedule.Scheduler()
         fn = self.scheduler.every(dt.total_seconds()).seconds
         if one_shot:
-            fn.do(one_shot(evt_cb))
+            fn.do(one_shot_cb(evt_cb))
         else:
             fn.do(evt_cb)
 
