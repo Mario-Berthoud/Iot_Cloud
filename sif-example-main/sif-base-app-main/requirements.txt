@@ -1,0 +1,5 @@
+schedule
+fastapi[standard]
+durationpy
+psutil
+urllib3

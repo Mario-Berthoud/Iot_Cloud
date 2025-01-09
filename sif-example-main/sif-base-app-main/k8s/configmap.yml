@@ -1,0 +1,8 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: <component-name>-configmap
+  labels:
+    app: <component-name>
+data:
+  SCH_SERVICE_NAME: http://sif-edge.sif:9000

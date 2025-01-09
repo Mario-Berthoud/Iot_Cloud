@@ -1,51 +1,121 @@
-from base import LocalGateway, base_logger, PeriodicTrigger, ExampleEventFabric
+#########################
+#       ACTUATION       #
+#########################
 
+from base import LocalGateway, base_logger
+from fastapi import Request
+import smtplib
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
+import json
 
+# Initialize the gateway
 app = LocalGateway()
+base_logger.info("Gateway initialized.")
 
-async def EmergencyNoticationFunction():
-    # Function
-    return 
+# Function to send email directly
+async def send_emergency_email(subject: str, body: str, recipients: list):
+    """
+    Sends an emergency email to the specified recipients.
 
-# app.deploy(base_fn, "fn-fabric", "CreateFn")
-app.deploy(EmergencyNoticationFunction,
-    name="str",
-    evts="List[str]",
-    method="str",
+    Args:
+        subject (str): Subject of the email.
+        body (str): Body of the email.
+        recipients (list): List of recipient email addresses.
+    """
+    base_logger.info("Preparing to send emergency email.")
+    try:
+        # Email configuration
+        smtp_server = "smtp.gmail.com"  # Gmail SMTP server
+        smtp_port = 587
+        sender_email = "iottrymario@gmail.com"  # Temporary email
+        sender_password = "IoTTUMexample"  # Temporary password
+
+        # Set up the email
+        message = MIMEMultipart()
+        message["From"] = sender_email
+        message["Subject"] = subject
+        message.attach(MIMEText(body, "plain"))
+        message["To"] = ", ".join(recipients)
+
+        # Log the email details
+        base_logger.info(f"Email prepared with subject: {subject} and recipients: {recipients}")
+
+        # Send the email
+        with smtplib.SMTP(smtp_server, smtp_port) as server:
+            server.starttls()  # Secure the connection
+            server.login(sender_email, sender_password)
+            server.sendmail(sender_email, recipients, message.as_string())
+
+        base_logger.info(f"Email sent successfully to {recipients}")
+
+    except Exception as e:
+        base_logger.error(f"Failed to send email: {e}")
+        raise
+
+# Function to handle emergency notifications
+async def emergency_notification_function(request: Request):
+    """
+    API endpoint to handle emergency notifications.
+
+    Args:
+        request (Request): Incoming HTTP request with emergency details.
+
+    Returns:
+        dict: Status of the operation.
+    """
+    base_logger.info("Emergency notification function triggered.")
+    try:
+        # Parse incoming request
+        data = await request.json()
+        base_logger.info(f"Received emergency data: {json.dumps(data, indent=2)}")
+
+        # Construct email content
+        subject = "Emergency Alert: Occupancy Condition Triggered"
+        body = f"An emergency has been detected with the following details:\n{json.dumps(data, indent=2)}"
+        recipients = ["recipient1@example.com", "recipient2@example.com"]  # Replace with actual recipients
+
+        # Send the email
+        await send_emergency_email(subject, body, recipients)
+
+        # Log success
+        base_logger.info("Emergency email sent successfully.")
+        return {"status": "success", "message": "Emergency notification sent."}
+
+    except Exception as e:
+        # Log the error
+        base_logger.error(f"Error in processing emergency notification: {e}")
+        return {"status": "error", "message": str(e)}
+
+# Deploy the emergency notification function
+app.deploy(
+    emergency_notification_function,
+    name="emergency_notification_function",
+    evts="EmergencyEvent",  # Event to trigger the function
+    method="POST"  # HTTP method for the function
 )
 
+base_logger.info("Emergency notification function deployed and ready.")
 
 
+#####################################
+#           EXAMPLE CODE            #
+#####################################
 
-# async def demo():
-#     base_logger.info("HELLO WORLD!!! You did it! :D")
-#     return
+#First Skeleton
 
+# from base import LocalGateway, base_logger, PeriodicTrigger, BaseEventFabric, ExampleEventFabric
+# from fastapi import FastAPI, request
 
-# async def base_fn():
-#     """
-#     Test example of dynamically deploying another route upon an HTTP request
+# app = LocalGateway()
 
-#     Since this function will be invoked once the `test` event is triggered,
-#     the route `/api/other` will be registered at runtime rather than upon 
-#     starting the server. Such behavior allows to dynamically create functions
-#     that could answer to new events. Be aware that registering two functions
-#     with the same name will result in only one route. You can change this
-#     behavior by providing the `path` argument.
+# async def EmergencyNoticationFunction():
+#     # Function
+#     return 
 
-#     Once this new route is registered, you will see it in the Homecare Hub under
-#     SIF Status, which means upon receiving an event (in this case `test`), you
-#     will see in the logs of this example the print above.
-#     """
-#     app.deploy(demo, "demo-fn", "GenEvent")
-#     return {"status": 200}
-
-# # Deploy a route within this server to be reachable from the SIF scheduler
-# # it appends the name of the cb to `/api/`. For more, please read the
-# # documentation for `deploy`
-# app.deploy(base_fn, "fn-fabric", "CreateFn")
-
-
-# evt = ExampleEventFabric()
-
-# tgr = PeriodicTrigger(evt, "30s", "1m")
+# # app.deploy(base_fn, "fn-fabric", "CreateFn")
+# app.deploy(EmergencyNoticationFunction,
+#     name="str",
+#     evts="List[str]",
+#     method="str",
+# )

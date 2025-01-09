@@ -1,25 +1,23 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: <component-name>
+  name: viz
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: <component-name>
+      app: viz
   template:
     metadata:
       labels:
-        app: <component-name>
+        app: viz
     spec:
-      imagePullSecrets:
-        - name: <secret>
       containers:
-        - name: <component-name>
-          image: <image-name>:<tag>
+        - name: viz
+          image: marioberthoud/sif-viz:latest
           imagePullPolicy: "Always"
           ports:
             - containerPort: 9000
           envFrom:
             - configMapRef:
-                name: <component-name>-configmap
+                name: viz-configmap
