@@ -180,7 +180,8 @@ def calculate_stays(df):
         stays.append(current_stay)
 
     stays_df = pd.DataFrame(stays)
-    print(stays_df)
+    #print(stays_df)
+
     return stays_df
 
 #WITH SEASONALITY
@@ -218,14 +219,13 @@ def identify_outliers(df, seasonal_stats):
 # ------------------------------ MINIO MODEL FUNCTIONS ------------------------------
 
 def save_model_minio(model):
-
     # Minio Initialize Client
     client = Minio(
         endpoint=MINIO_ENDPOINT, 
         access_key=MINIO_ACCESS_KEY, 
         secret_key=MINIO_SECRET_KEY, 
         secure=False
-        )
+    )
     base_logger.info("Initialized MinIO client successfully.")
 
     found = client.bucket_exists(MINIO_BUCKET)
@@ -236,11 +236,11 @@ def save_model_minio(model):
         base_logger.info(f"Bucket '{MINIO_BUCKET}' already exists.")
 
     # Timestamp object 
-    current_time = datetime.datetime.now().strftime("%d-%m-%y_%H-%M-%S")
+    current_time = datetime.now().strftime("%d-%m-%y_%H-%M-%S")
     data = pd.DataFrame.to_json(model).encode("utf-8")
     object_name = f"model_{current_time}.json"
 
-    # save model to minio
+    # Save model to Minio
     try:
         client.put_object(
             bucket_name=MINIO_BUCKET,
@@ -252,22 +252,67 @@ def save_model_minio(model):
         )
         base_logger.info(f"Model saved to MinIO as '{object_name}' in bucket '{MINIO_BUCKET}'.")
 
+        # Save the version of the model to a text file
+        version_file_name = "latest_model_version.txt"
+        client.put_object(
+            bucket_name=MINIO_BUCKET,
+            object_name=version_file_name,
+            data=BytesIO(object_name.encode("utf-8")),
+            length=len(object_name),
+            content_type="text/plain"
+        )
+        base_logger.info(f"Model version saved to MinIO as '{version_file_name}' in bucket '{MINIO_BUCKET}'.")
+
     except Exception as e:
-        base_logger.error(f"Error storing model to minio: {e}")
-    base_logger.info(f"Stored model_{current_time}.json to minio")
-                   
+        base_logger.error(f"Error storing model to Minio: {e}")
+    base_logger.info(f"Stored model_{current_time}.json to Minio")
 
+def load_latest_model_minio():
+    # Minio Initialize Client
+    client = Minio(
+        endpoint=MINIO_ENDPOINT, 
+        access_key=MINIO_ACCESS_KEY, 
+        secret_key=MINIO_SECRET_KEY, 
+        secure=False
+    )
+    base_logger.info("Initialized MinIO client successfully.")
 
-# ------------------------------ MAIN APPLICATION FUNCTIONS ------------------------------
+    try:
+        # Get the latest model version
+        version_file_name = "latest_model_version.txt"
+        response = client.get_object(MINIO_BUCKET, version_file_name)
+        latest_model_name = response.data.decode("utf-8")
+        response.close()
+        response.release_conn()
+        base_logger.info(f"Latest model version: {latest_model_name}")
+
+        # Load the latest model 
+        response = client.get_object(MINIO_BUCKET, latest_model_name)
+        model_data = response.data.decode("utf-8")
+        response.close()
+        response.release_conn()
+        model = pd.read_json(BytesIO(model_data.encode("utf-8")))
+        base_logger.info(f"Loaded model from MinIO: {latest_model_name}")
+
+        return model
+
+    except Exception as e:
+        base_logger.error(f"Error loading model from Minio: {e}")
+        return None
+
+# ------------------------------ MAIN APPLICATION  ------------------------------
 
 app = LocalGateway()
-base_logger.info("Ocupancy Modeling Getaway initiated.")
+base_logger.info("Getaway initiated.")
 
-async def ocupancy_model_creation(request: Request):
+# ------------------------------ OCCUPANCY MODEL FUNCTION  ------------------------------
+
+async def CreateOccupancyModelFunction(request: Request):
     base_logger.info("Function ocupancy_model_creation called.")
 
-    # data = await request.json()
-    # base_logger.info(f"Received data: {data}")
+    base_logger.info("Function create occupancy model called.")
+    data_recieved = await request.json()
+    base_logger.info(f"Function create_occupancy_model_function received data: {data_recieved}")
 
     base_logger.info("Fetching data")
     new_data=fetch_data_arrangement()
@@ -280,19 +325,33 @@ async def ocupancy_model_creation(request: Request):
     base_logger.info("Calculating outliers")
     outliers_df = identify_outliers(stays_df, seasonal_stays_df)
 
-    base_logger.info("saving model to minio")
-    save_model(model)
+    base_logger.info("Saving ocupancy model to minio")
+    save_model_minio(time_stats)  # cambia time_stats por tu output del modelo final 
+    load_latest_model_minio()   
     base_logger.info("model trained and stored")
 
     return {"status": 200, "message": "Model trained and stored"}
 
-app.deploy(ocupancy_model_creation,
-    name="ocupancy_model_creation",
+app.deploy(CreateOccupancyModelFunction,
+    name="CreateOccupancyModelFunction",
     evts="TrainOccupancyModelEvent",
     method="POST",
 )
-base_logger.info("ocupancy_model_creation deployed.")
+base_logger.info("CreateOccupancyModelFunction deployed.")
 
+# ------------------------------ MOTION MODEL FUNCTION  ------------------------------
+
+async def CreateMotionModelFunction(request: Request):
+    base_logger.info("Function CreateMotionModelFunction called.")
+
+    return {"status": 200, "message": "Model trained and stored"}
+
+app.deploy(CreateMotionModelFunction,
+    name="CreateMotionModelFunction",
+    evts="TrainMotionModelEvent",
+    method="POST",
+)
+base_logger.info("CreateMotionModelFunction deployed.")
 
 
 
