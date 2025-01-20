@@ -344,6 +344,16 @@ base_logger.info("CreateOccupancyModelFunction deployed.")
 async def CreateMotionModelFunction(request: Request):
     base_logger.info("Function CreateMotionModelFunction called.")
 
+    base_logger.info("Function create occupancy model called.")
+    data_recieved = await request.json()
+    base_logger.info(f"Function create_occupancy_model_function received data: {data_recieved}")
+
+    base_logger.info("Fetching data")
+    new_data=fetch_data_arrangement()
+    data_sorted=data_sorting(new_data)
+
+
+
     return {"status": 200, "message": "Model trained and stored"}
 
 app.deploy(CreateMotionModelFunction,
@@ -352,143 +362,3 @@ app.deploy(CreateMotionModelFunction,
     method="POST",
 )
 base_logger.info("CreateMotionModelFunction deployed.")
-
-
-
-
-
-
-
-
-
-# # fixex the error or multiple corridor values    
-# def fetch_data_arrangement():
-
-
-#     # data = data.sort_values(by="timestamp").reset_index(drop=True)
-#     # data["stay_id"] = (data["bucket"] != data["bucket"].shift()).cumsum()
-#     # stays = data.groupby(["stay_id", "bucket"]).agg(
-#     #     start=("timestamp", "min"),
-#     #     end=("timestamp", "max")
-#     # ).reset_index()
-#     # stays["duration"] = (stays["end"] - stays["start"]).dt.total_seconds() / 60  # Duration in minutes
-
-#     # return stays
-
-#     return
-
-
-
-
-
-# def basic_data_arrangement():   #fetch_influx_data():
-
-#     influx_data = []  #all_fata
-
-#     # Fetch data for all buckets
-#     for bucket in BUCKETS_PIR:
-#         if bucket == BUCKET_DOOR:
-#             data = fetch_data(bucket, "door", "roomID")
-#         else:
-#             data = fetch_data(bucket, "PIR", "roomID")
-#         # Add bucket info to each fetched record
-#         for record in data:
-#             record["bucket"] = bucket  # Add bucket identifier            
-#         influx_data.extend(data)
-
-#     # Create a pandas DataFrame
-#     df = pd.DataFrame(influx_data)
-#     base_logger.info(f"Original data shape: {df.shape}")
-
-#     # Convert timestamp and sort
-#     df["timestamp"] = pd.to_datetime(df["timestamp"], unit='ms')
-#     df = df.sort_values("timestamp")
-
-#     # Map bucket to value
-#     df["value"] = df["bucket"].map(bucket_mapping)
-
-#     return df
-
-
-
-
-
-# def save_model_to_minio(model, room_stats):
-
-#     # Minio Initialize Client    
-#     client = Minio(
-#         endpoint=MINIO_ENDPOINT, 
-#         access_key=MINIO_ACCESS_KEY, 
-#         secret_key=MINIO_SECRET_KEY, 
-#         secure=False
-#         )
-#     base_logger.info("Initialized MinIO client successfully.")
-
-#     # Serialize the model (room_stats) to JSON
-#     model_json = room_stats.to_json(orient='records', date_format='iso')
-
-#     # Ensure the bucket exists
-#     if not client.bucket_exists(MINIO_BUCKET):
-#         client.make_bucket(MINIO_BUCKET)
-#         base_logger.info(f"Bucket '{MINIO_BUCKET}' created.")
-#     else:
-#         base_logger.info(f"Bucket '{MINIO_BUCKET}' already exists.")
-
-#     # Create a timestamped object name to keep old versions
-#     current_time = datetime.datetime.now().strftime("%d-%m-%y_%H-%M-%S")
-#     object_name = f"model_{current_time}.json"
-
-#     # Download the modell
-#     try:
-#         response = client.get_object(
-#             bucket_name=MINIO_BUCKET,
-#             object_name=object_name,
-#         )
-#         # Convert JSON string to bytes
-#         data = model_json.encode('utf-8')
-#         data_stream = BytesIO(data)
-#         data_length = len(data)
-
-#         data=data_stream,
-#         length=data_length,
-#         content_type='application/json'        
-#         base_logger.info(f"Model saved to MinIO as '{object_name}' in bucket '{MINIO_BUCKET}'.")
-
-#     except Exception as e:
-#         base_logger.error(f"Error sotring model to MinIO: {e}")
-                 
-
-
-# # fixex the error or multiple corridor values    
-# def fetch_data_arrangement():
-
-
-#     # data = data.sort_values(by="timestamp").reset_index(drop=True)
-#     # data["stay_id"] = (data["bucket"] != data["bucket"].shift()).cumsum()
-#     # stays = data.groupby(["stay_id", "bucket"]).agg(
-#     #     start=("timestamp", "min"),
-#     #     end=("timestamp", "max")
-#     # ).reset_index()
-#     # stays["duration"] = (stays["end"] - stays["start"]).dt.total_seconds() / 60  # Duration in minutes
-
-#     # return stays
-
-#     return
-
-
-
-
-
-
-
-# def initialize_minio_client():
-
-#     client = Minio(
-#         endpoint=MINIO_ENDPOINT, 
-#         access_key=MINIO_ACCESS_KEY, 
-#         secret_key=MINIO_SECRET_KEY, 
-#         secure=False
-#         )
-#     base_logger.info("Initialized MinIO client successfully.")
-
-#     return 

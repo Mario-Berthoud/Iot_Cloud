@@ -3,3 +3,7 @@ fastapi[standard]
 durationpy
 psutil
 urllib3
+pandas
+minio
+influxdb_client
+uvicorn==0.18.2

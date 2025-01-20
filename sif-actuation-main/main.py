@@ -3,119 +3,167 @@
 #########################
 
 from base import LocalGateway, base_logger
+
 from fastapi import Request
 import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 import json
+import logging
+import time
+import urllib3
+
+VIZ_COMPONENT_URL = "http://192.168.1.132:9000"
+
+logger = logging.getLogger(__name__)
+
+def send_info(summary: str, detail: str, level: int) -> None:
+    """
+    Sends an informational item to the /api/info endpoint of the VIZ component.
+
+    :param summary: Short description or summary of the information.
+    :param detail: Detailed information (any serializable object).
+    :param level: Priority or level of the information.
+    """
+    current_timestamp = int(time.time() * 1000)
+
+    # Serialize 'message' to a JSON string if it's not already a string
+    if isinstance(detail, str):
+        msg_str = detail
+    else:
+        try:
+            msg_str = json.dumps(detail, ensure_ascii=False)
+        except (TypeError, ValueError) as e:
+            logger.error(f"Failed to serialize message to JSON: {e}")
+            return
+
+    info_item = {
+        "timestamp": current_timestamp,
+        "summary": summary,
+        "detail": msg_str,
+        "level": level
+    }
+
+    # Encode the info_item to JSON bytes
+    try:
+        encoded_data = json.dumps(info_item).encode('utf-8')
+    except (TypeError, ValueError) as e:
+        logger.error(f"Failed to encode info item to JSON: {e}")
+        return
+
+    http = urllib3.PoolManager()
+    url = f"{VIZ_COMPONENT_URL}/api/info"
+    headers = {"Content-Type": "application/json"}
+
+    try:
+        response = http.request("POST", url, body=encoded_data, headers=headers)
+        if response.status in [200, 201]:
+            logger.info("Information item saved successfully.")
+            if response.data:
+                # Attempt to parse the response as JSON
+                try:
+                    response_data = json.loads(response.data.decode("utf-8"))
+                    logger.info(f"Response: {response_data}")
+                except json.JSONDecodeError:
+                    logger.warning("Response data is not valid JSON.")
+        else:
+            logger.error(f"Failed to save info. HTTP Status: {response.status}")
+            logger.error(f"Response: {response.data.decode('utf-8')}")
+    except urllib3.exceptions.HTTPError as e:
+        logger.error(f"HTTP error: {e}")
+    except Exception as e:
+        logger.error(f"Unexpected error: {e}")
+
+
+def send_todo(title: str, message: str, level: int) -> None:
+    """
+    Sends a ToDo item to the /api/todo endpoint of the VIZ component.
+
+    :param title: Title of the ToDo item.
+    :param message: Detailed message (any JSON-serializable object).
+    :param level: Priority or level of the ToDo item.
+    """
+    # Generate the current Unix timestamp in milliseconds
+    current_timestamp = int(time.time() * 1000)
+
+    # Serialize 'message' to a JSON string if it's not already a string
+    if isinstance(message, str):
+        msg_str = message
+    else:
+        try:
+            msg_str = json.dumps(message, ensure_ascii=False)
+        except (TypeError, ValueError) as e:
+            logger.error(f"Failed to serialize message to JSON: {e}")
+            return
+
+    # Create the ToDo item
+    todo_item = {
+        "timestamp": current_timestamp,
+        "titel": title,
+        "msg": msg_str,
+        "level": level
+    }
+
+    # Convert the Python dictionary to a JSON string
+    encoded_data = json.dumps(todo_item).encode('utf-8')
+
+    # Initialize the PoolManager
+    http = urllib3.PoolManager()
+
+    # Define the URL
+    url = f"{VIZ_COMPONENT_URL}/api/todo"
+
+    # Set the headers
+    headers = {
+        'Content-Type': 'application/json'
+    }
+
+    try:
+        # Send the POST request
+        response = http.request(
+            'POST',
+            url,
+            body=encoded_data,
+            headers=headers
+        )
+        
+        # Check the response status
+        if response.status in [200, 201]:
+            print("ToDo item saved successfully.")
+            # Optionally, parse the response data
+            if response.data:
+                response_data = json.loads(response.data.decode('utf-8'))
+                print("Response:", response_data)
+        else:
+            print(f"Failed to save ToDo item. Status Code: {response.status}")
+            print("Response:", response.data.decode('utf-8'))
+    except urllib3.exceptions.HTTPError as e:
+        print(f"HTTP error occurred: {e}")
+    except Exception as e:
+        print(f"An error occurred: {e}")
 
 # Initialize the gateway
 app = LocalGateway()
 base_logger.info("Gateway initialized.")
 
-# Function to send email directly
-async def send_emergency_email(subject: str, body: str, recipients: list):
-    """
-    Sends an emergency email to the specified recipients.
+async def EmergencyNoticationFunction(request: Request):
 
-    Args:
-        subject (str): Subject of the email.
-        body (str): Body of the email.
-        recipients (list): List of recipient email addresses.
-    """
-    base_logger.info("Preparing to send emergency email.")
-    try:
-        # Email configuration
-        smtp_server = "smtp.gmail.com"  # Gmail SMTP server
-        smtp_port = 587
-        sender_email = "iottrymario@gmail.com"  # Temporary email
-        sender_password = "IoTTUMexample"  # Temporary password
+    base_logger.info("EmergencyNoticationFunction called.")
+    msg = await request.json()  # Parse the incoming JSON request
+    base_logger.info(f"Function create_emergency_notification_function received data: {msg}")
 
-        # Set up the email
-        message = MIMEMultipart()
-        message["From"] = sender_email
-        message["Subject"] = subject
-        message.attach(MIMEText(body, "plain"))
-        message["To"] = ", ".join(recipients)
+    base_logger.info("Sending Emergency Notification.")
+    send_todo("Emergency detected! ", msg, 2)  # Send the emergency notification 
 
-        # Log the email details
-        base_logger.info(f"Email prepared with subject: {subject} and recipients: {recipients}")
+    base_logger.info("Emergency Notification sent.")
 
-        # Send the email
-        with smtplib.SMTP(smtp_server, smtp_port) as server:
-            server.starttls()  # Secure the connection
-            server.login(sender_email, sender_password)
-            server.sendmail(sender_email, recipients, message.as_string())
-
-        base_logger.info(f"Email sent successfully to {recipients}")
-
-    except Exception as e:
-        base_logger.error(f"Failed to send email: {e}")
-        raise
-
-# Function to handle emergency notifications
-async def emergency_notification_function(request: Request):
-    """
-    API endpoint to handle emergency notifications.
-
-    Args:
-        request (Request): Incoming HTTP request with emergency details.
-
-    Returns:
-        dict: Status of the operation.
-    """
-    base_logger.info("Emergency notification function triggered.")
-    try:
-        # Parse incoming request
-        data = await request.json()
-        base_logger.info(f"Received emergency data: {json.dumps(data, indent=2)}")
-
-        # Construct email content
-        subject = "Emergency Alert: Occupancy Condition Triggered"
-        body = f"An emergency has been detected with the following details:\n{json.dumps(data, indent=2)}"
-        recipients = ["recipient1@example.com", "recipient2@example.com"]  # Replace with actual recipients
-
-        # Send the email
-        await send_emergency_email(subject, body, recipients)
-
-        # Log success
-        base_logger.info("Emergency email sent successfully.")
-        return {"status": "success", "message": "Emergency notification sent."}
-
-    except Exception as e:
-        # Log the error
-        base_logger.error(f"Error in processing emergency notification: {e}")
-        return {"status": "error", "message": str(e)}
+    return
 
 # Deploy the emergency notification function
 app.deploy(
-    emergency_notification_function,
-    name="emergency_notification_function",
-    evts="EmergencyEvent",  # Event to trigger the function
-    method="POST"  # HTTP method for the function
+    EmergencyNoticationFunction, 
+    name="EmergencyNoticationFunction", 
+    evts="EmergencyEvent", 
+    method="POST"
 )
-
-base_logger.info("Emergency notification function deployed and ready.")
-
-
-#####################################
-#           EXAMPLE CODE            #
-#####################################
-
-#First Skeleton
-
-# from base import LocalGateway, base_logger, PeriodicTrigger, BaseEventFabric, ExampleEventFabric
-# from fastapi import FastAPI, request
-
-# app = LocalGateway()
-
-# async def EmergencyNoticationFunction():
-#     # Function
-#     return 
-
-# # app.deploy(base_fn, "fn-fabric", "CreateFn")
-# app.deploy(EmergencyNoticationFunction,
-#     name="str",
-#     evts="List[str]",
-#     method="str",
-# )
+base_logger.info("create_emergency_notification_function app deployed.")

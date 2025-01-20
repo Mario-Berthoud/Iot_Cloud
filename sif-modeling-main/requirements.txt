@@ -6,3 +6,4 @@ urllib3
 pandas
 influxdb_client
 minio
+uvicorn==0.18.2

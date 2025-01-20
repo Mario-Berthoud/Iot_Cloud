@@ -247,7 +247,7 @@ def load_latest_model_minio():
 # ------------------------------ MAIN APPLICATION  ------------------------------
 # ------------------------------ OCUPANCY EVENTS ------------------------------ 
 
-class TrainOccupancyModelEvent(BaseEventFabric): # Every ?
+class TrainOccupancyModelEvent(BaseEventFabric):
     def __init__(self):
         super(TrainOccupancyModelEvent, self).__init__()
 
@@ -257,7 +257,7 @@ class TrainOccupancyModelEvent(BaseEventFabric): # Every ?
         base_logger.info(f"Event generated: {evt_name}")
         return evt_name, data
 
-class CheckEmergencyEvent(BaseEventFabric): # Every minutes?
+class CheckEmergencyEvent(BaseEventFabric): 
     def __init__(self):
         super(CheckEmergencyEvent, self).__init__()
 
@@ -348,7 +348,7 @@ periodicTrainModelTrigger = PeriodicTrigger(
 
 periodicCheckEmergencyTrigger = PeriodicTrigger(
     CheckEmergencyEvent(), 
-    duration="30m", 
+    duration="10m", 
     wait_time="30s")
 
 base_logger.info("Occupancy Triggers added for TrainOccupancyModelEvent and CheckEmergencyEvent.")
